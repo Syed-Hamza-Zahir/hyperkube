@@ -1,0 +1,85 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sensa-admin-account
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hyperkube
+spec:
+  restartPolicy: Never
+  imagePullSecrets:
+    - name: regcred
+  serviceAccountName: sensa-admin-account
+  containers:
+    - name: hyperkube
+      image: "index.docker.io/symphonysensa/hyperkube:v4.3.5"
+      imagePullPolicy: IfNotPresent
+      command: ["sleep"]
+      args: ["infinity"]
+      env:
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: SENSA_SERVICES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sensa-global-secrets
+              key: SENSA_SERVICES_PASSWORD
+        - name: SENSA_USER_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sensa-global-secrets
+              key: SENSA_USER_PASSWORD
+        - name: MINIO_BACKUP_FOLDER
+          value: "backups"
+        - name: MINIO_UPLOAD_USER
+          value: "landing"
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: sensa-global-secrets
+              key: SENSA_DB_PASSWORD
+        - name: SENSA_ENCRYPTION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: sensa-global-secrets
+              key: SENSA_ENCRYPTION_SECRET
+        - name: SENSA_API_KEY_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: sensa-global-secrets
+              key: SENSA_API_KEY_SECRET
+      volumeMounts:
+        - name: sensasecrets-volume
+          mountPath: /sensasecrets-volume
+  volumes:
+    - name: sensasecrets-volume
+      secret:
+        secretName: sensa-global-secrets
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: sensa-admin
+rules:
+- apiGroups: [""]
+  resources: ["*"]
+  verbs: ["*"]
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: sensa-adminbinding
+subjects:
+- kind: ServiceAccount
+  name: sensa-admin-account
+roleRef:
+  kind: Role
+  name: sensa-admin
+  apiGroup: rbac.authorization.k8s.io
