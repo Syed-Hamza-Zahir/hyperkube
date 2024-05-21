@@ -14,7 +14,7 @@ spec:
   serviceAccountName: sensa-admin-account
   containers:
     - name: hyperkube
-      image: "index.docker.io/symphonysensa/hyperkube:v4.3.5"
+      image: "index.docker.io/symphonyFS/hyperkube:v4.3.5"
       imagePullPolicy: IfNotPresent
       command: ["sleep"]
       args: ["infinity"]
